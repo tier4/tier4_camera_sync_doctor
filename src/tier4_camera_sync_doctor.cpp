@@ -217,6 +217,10 @@ std::optional<int> Tier4CameraSyncDoctor::parseReadoutDelayParamFile(const std::
 
   std::string key = "delay_ms";
   auto delay_ms = getYamlEntryValue<int>(rcl_param, key);
+  if (!delay_ms) {
+    key = "readout_delay_ms";
+    delay_ms = getYamlEntryValue<int>(rcl_param, key);
+  }
   checkParamFound(delay_ms, path, key);
 
   return delay_ms.value();
