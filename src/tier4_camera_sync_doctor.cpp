@@ -416,11 +416,11 @@ void Tier4CameraSyncDoctor::diagnoseSyncStatus(diagnostic_updater::DiagnosticSta
     match_result = matchPair(camera_time, trigger_time);
   }
 
-  if (!is_camera_queue_empty) {
+  if (!is_camera_queue_empty && match_result == PairMatchResult::Match) {
     std::lock_guard<std::mutex> queue_lock(camera_queue_mutex_);
     camera_time_queue_.pop();
   }
-  if (!is_trigger_queue_empty) {
+  if (!is_trigger_queue_empty && match_result == PairMatchResult::Match) {
     std::lock_guard<std::mutex> queue_lock(trigger_queue_mutex_);
     trigger_time_queue_.pop();
   }
