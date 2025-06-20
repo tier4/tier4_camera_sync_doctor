@@ -295,6 +295,14 @@ void Tier4CameraSyncDoctor::triggerTimeCallback(
   }
 }
 
+int64_t Tier4CameraSyncDoctor::getIdealCameraTimestampDiff()
+{
+  // TODO(manato): modify here to accept diffent ideal_diff because ideal_diff depends on the camera
+  // type to be used. Especially in case of C1, ideal_diff is timestamp_offset_.value (i.e.,
+  // exposure length)
+  return static_cast<int64_t>(delay_ms_.value_or(0)) * 1e6;
+}
+
 SyncStatus Tier4CameraSyncDoctor::diagnoseTriggerTime(
   const builtin_interfaces::msg::Time & trigger_time)
 {
@@ -336,8 +344,10 @@ SyncStatus Tier4CameraSyncDoctor::diagnoseCameraTime(
   int64_t camera_time_nsec = get_timestamp_nsec(camera_time) - timestamp_offset_.value_or(0);
   int64_t timestamp_diff = camera_time_nsec - trigger_time_nsec;  // take signed diff
 
+  int64_t ideal_diff = getIdealCameraTimestampDiff();
+
   SyncStatus camera_sync_status;
-  camera_sync_status.level = (timestamp_diff < camera_time_tolerance_)
+  camera_sync_status.level = (std::abs(ideal_diff - timestamp_diff) < camera_time_tolerance_)
                                ? diagnostic_msgs::msg::DiagnosticStatus::OK
                                : diagnostic_msgs::msg::DiagnosticStatus::ERROR;
   camera_sync_status.diff_nsec = timestamp_diff;
@@ -355,10 +365,7 @@ PairMatchResult Tier4CameraSyncDoctor::matchPair(
   int64_t camera_time_nsec = get_timestamp_nsec(camera_time) - timestamp_offset_.value_or(0);
   int64_t timestamp_diff = camera_time_nsec - trigger_time_nsec;  // take signed diff
 
-  // TODO(manato): modify here to accept diffent ideal_diff because ideal_diff depends on the camera
-  // type to be used. Especially in case of C1, ideal_diff is timestamp_offset_.value (i.e.,
-  // exposure length)
-  int64_t ideal_diff = static_cast<int64_t>(delay_ms_.value_or(0));
+  int64_t ideal_diff = getIdealCameraTimestampDiff();
   int64_t interval_nsec = static_cast<int64_t>(1e9 / frame_rate_);
 
   // check difference between trigger time and camera info header time.
@@ -447,7 +454,8 @@ void Tier4CameraSyncDoctor::diagnoseSyncStatus(diagnostic_updater::DiagnosticSta
 
   addKeyValue("Camera status", stringize_level(camera_sync_status.level));
   addKeyValue("Camera diff nanoseconds", camera_sync_status.diff_nsec);
-  addKeyValue("Camera diff threshold", camera_time_tolerance_);
+  addKeyValue("Camera ideal diff nanoseconds", getIdealCameraTimestampDiff());
+  addKeyValue("Camera diff tolerance", camera_time_tolerance_);
 
   addKeyValue("Trigger status", stringize_level(trigger_sync_status.level));
   addKeyValue("Trigger diff nanoseconds", trigger_sync_status.diff_nsec);

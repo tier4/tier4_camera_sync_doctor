@@ -89,6 +89,8 @@ protected:
   void cameraInfoCallback(const sensor_msgs::msg::CameraInfo::ConstSharedPtr & msg_ptr);
   void triggerTimeCallback(const builtin_interfaces::msg::Time::ConstSharedPtr & msg_ptr);
 
+  int64_t getIdealCameraTimestampDiff();
+
   SyncStatus diagnoseTriggerTime(const builtin_interfaces::msg::Time & trigger_time);
   SyncStatus diagnoseCameraTime(
     const builtin_interfaces::msg::Time & camera_time,
