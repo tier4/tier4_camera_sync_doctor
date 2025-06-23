@@ -432,8 +432,26 @@ void Tier4CameraSyncDoctor::diagnoseSyncStatus(diagnostic_updater::DiagnosticSta
     trigger_time_queue_.pop();
   }
 
+  auto addKeyValue = [&stat](const std::string & key, const auto & value) {
+    std::stringstream value_ss;
+    value_ss << value;
+    stat.add(key, value_ss.str());
+  };
+
   if (match_result != PairMatchResult::Match) {
     // matched pair is not found
+    using diagnostic_msgs::msg::DiagnosticStatus;
+    stat.summary(DiagnosticStatus::WARN, "");
+    addKeyValue("Camera status", stringize_level(DiagnosticStatus::WARN));
+    addKeyValue("Camera diff nanoseconds", "N/A");
+    addKeyValue("Camera ideal diff nanoseconds", getIdealCameraTimestampDiff());
+    addKeyValue("Camera diff tolerance", camera_time_tolerance_);
+
+    addKeyValue("Trigger status", stringize_level(DiagnosticStatus::WARN));
+    addKeyValue("Trigger diff nanoseconds", "N/A");
+    addKeyValue("Trigger diff threshold", trigger_time_tolerance_);
+
+    addKeyValue("Valid stamp pair found", "false");
     return;
   }
 
@@ -446,12 +464,6 @@ void Tier4CameraSyncDoctor::diagnoseSyncStatus(diagnostic_updater::DiagnosticSta
   // Update diagnostis
   stat.summary(std::max(trigger_sync_status.level, camera_sync_status.level), "");
 
-  auto addKeyValue = [&stat](const std::string & key, const auto & value) {
-    std::stringstream value_ss;
-    value_ss << value;
-    stat.add(key, value_ss.str());
-  };
-
   addKeyValue("Camera status", stringize_level(camera_sync_status.level));
   addKeyValue("Camera diff nanoseconds", camera_sync_status.diff_nsec);
   addKeyValue("Camera ideal diff nanoseconds", getIdealCameraTimestampDiff());
@@ -460,6 +472,8 @@ void Tier4CameraSyncDoctor::diagnoseSyncStatus(diagnostic_updater::DiagnosticSta
   addKeyValue("Trigger status", stringize_level(trigger_sync_status.level));
   addKeyValue("Trigger diff nanoseconds", trigger_sync_status.diff_nsec);
   addKeyValue("Trigger diff threshold", trigger_time_tolerance_);
+
+  addKeyValue("Valid stamp pair found", "true");
 }
 
 }  // namespace tier4_camera_sync_doctor
